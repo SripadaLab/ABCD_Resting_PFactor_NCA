@@ -204,7 +204,7 @@ def freedman_lane_permutations(edges, phenotype, covariates, n_perms, perm_order
         perm_tvalues[perm_idx, :] = betas[0, :]/beta_std
         perm_betas[perm_idx, :] = betas[0, :]
         
-        if (perm_idx+1) % (n_perms // 10) == 0:
+        if (perm_idx+1) % (n_perms // min(n_perms, 10)) == 0:
             print(f'     freedman-lane perms {int(100*((perm_idx+1) / n_perms))}% complete...')
             
     return perm_tvalues, perm_betas

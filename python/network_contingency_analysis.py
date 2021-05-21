@@ -10,7 +10,6 @@ def suprathreshold_count_cell_summary_fn(t_vals_per_edge, t_threshold):
     return np.sum(np.abs(t_vals_per_edge) > abs(t_thresh))
 
 
-
 def network_contingency_analysis(edges, phenotype, covariates, n_perms, t_threshold, net_order_file, 
                                  perm_order=None, cell_summary_fn=suprathreshold_count_cell_summary_fn, random_seed=42):
     
@@ -136,8 +135,7 @@ def network_contingency_analysis(edges, phenotype, covariates, n_perms, t_thresh
     _, FDR_corrected_cell_pvals = statsmodels.stats.multitest.fdrcorrection(cell_raw_pvals, alpha=0.05)
     
     return observed_tvalues, perm_tvalues, observed_cell_summaries, perm_cell_summaries, cell_raw_pvals, FDR_corrected_cell_pvals
-
-        
+   
     
 def freedman_lane_permutations(edges, phenotype, covariates, n_perms, perm_order):
     """
@@ -212,7 +210,6 @@ def freedman_lane_permutations(edges, phenotype, covariates, n_perms, perm_order
     return perm_tvalues, perm_betas
 	
 	
-
 def generate_cell_edges_dict(net_order_file):
     """ 
     Generates dictionary that maps cell_id -> (indices of edges) for cell

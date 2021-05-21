@@ -3,13 +3,23 @@ import scipy
 import itertools
 import statsmodels
 
-def network_contingency_analysis(edges, phenotype, covariates, n_perms, t_threshold, net_order_file, perm_order=None, cell_summary_fn=suprathreshold_count_cell_summary_fn, random_seed=42):
+
+
+def suprathreshold_count_cell_summary_fn(t_vals_per_edge, t_threshold):
+    """ Returns the number of suprathreshold edges in t_vals_per_edge. This is the cell summary statistic used in Sripada (2021).
+    """
+    return np.sum(np.abs(t_vals_per_edge) > abs(t_thresh))
+
+
+
+def network_contingency_analysis(edges, phenotype, covariates, n_perms, t_threshold, net_order_file, 
+                                 perm_order=None, cell_summary_fn=suprathreshold_count_cell_summary_fn, random_seed=42):
     
     """
     Network contingency analysis (NCA) assesses whether the observed cell summary statistic (eg: count of suprathreshold edges) in a cell is higher than what is expected by chance. 
     Schematically, the procedure is as follows: 
         - per edge linear regression is conducted with the following formula: edge_i ~ intercept + phenotype + covariates
-        - the t-value for the beta associated with the phenotype in the formula above is stored, for each edge
+          the t-value for the beta associated with the phenotype in the formula above is stored, for each edge
         - the 2 steps above are repeated with Freedman and Lane permutations (1983) to determine the null/chance t-value distribution for the phenotype-beta each edge
           a schematic for Freedman and Lane permuatations is provided in the code comments below
         - summary statistic is computed for each cell (pair of networks) by aggregating the t-values for the edges in the cell, for both observed and permutation t-values
@@ -85,27 +95,30 @@ def network_contingency_analysis(edges, phenotype, covariates, n_perms, t_thresh
     
     # first step of schematic above: 
     #     per edge linear regression is conducted with the following formula: edge_i ~ phenotype + covariates
+    print('running step 1 - per edge linear regression is conducted with the following formula: edge_i ~ phenotype + covariates...')
     X = np.hstack((phenotype,                         # phenotype
-                   np.ones((phenotype.shape[0], 1))   # intercept term 
+                   np.ones((phenotype.shape[0], 1)),  # intercept term 
                    covariates))                       # covariate block
     n_subjects, n_predictors = X.shape
     X_pinv = scipy.linalg.pinv2(X)
     inv_vcv = scipy.linalg.inv(np.dot(X.T, X))               # shape: (n_predictors, n_predictors)
     inv_vcv = np.sqrt(np.diag(inv_vcv))
-    betas = np.dot(pinv, edges)                              # shape: (n_predictors, n_edges)
+    betas = np.dot(X_pinv, edges)                            # shape: (n_predictors, n_edges)
     fit = np.dot(X, betas)                                   # shape: (n_subjects, n_edges)
     residuals = edges - fit                                  # shape: (n_subjects, n_edges)
     eps_std = np.std(residuals, axis=0, ddof=n_predictors)   # shape: (n_edges, )
     pheno_beta_std = inv_vcv[0] * eps_std                    # shape: (n_edges, )
-    observed_tvalues =  b[0, :]/pheno_beta_std              # shape: (n_edges, ) array of observed t-values for the phenotype-betas
+    observed_tvalues =  betas[0, :]/pheno_beta_std           # shape: (n_edges, ) array of observed t-values for the phenotype-betas
     
-    # third step of schematic above: 
+    # second step of schematic above: 
     #     generate null/chance distribution for phenotype betas and t-values using Freedman and Lane permutations
     # note - perm_betas are standardized if edges, phenotypes and covariates are column-wise zscored (where appropriate)
+    print('running step 2 - generate null/chance distribution for phenotype betas and t-values using Freedman and Lane permutations...')
     perm_tvalues, perm_betas = freedman_lane_permutations(edges, phenotype, covariates, n_perms, perm_order)
     
-    # fourth step of schematic above:
-    #     summary statistic is computed for each cell, for both observed and permuted tvalues
+    # third step of schematic above:
+    #     summary statistics and pvalues computed for each cell, for both observed and permuted tvalues
+    print('running steps 3/4- summary statistic and pvalues are computed for each cell, for both observed and permuted tvalues...')
     cell_edges_dict = generate_cell_edges_dict(net_order_file)
     
     observed_cell_summaries = np.zeroes(len(cell_edges_dict))
@@ -113,7 +126,6 @@ def network_contingency_analysis(edges, phenotype, covariates, n_perms, t_thresh
     cell_raw_pvals = np.zeroes(len(cell_edges_dict))
     for cell_i, cell in enumerate(cell_edges_dict):
         cell_edges_idxs = cell_edges_dict[cell]
-        
         observed_cell_summary = cell_summary_fn(observed_tvalues[cell_edges_idxs], t_threshold)
         perms_cell_summary = np.apply_along_axis(lambda x: cell_summary_fn(x, t_threshold),
                                                 axis=1,
@@ -127,11 +139,6 @@ def network_contingency_analysis(edges, phenotype, covariates, n_perms, t_thresh
     return observed_tvalues, perm_tvalues, observed_cell_summaries, perm_cell_summaries, cell_raw_pvals, FDR_corrected_cell_pvals
 
         
-def suprathreshold_count_cell_summary_fn(t_vals_per_edge, t_threshold):
-    """ Returns the number of suprathreshold edges in t_vals_per_edge. This is the cell summary statitic used in Sripada (2021).
-    """
-    return np.sum(np.abs(t_vals_per_edge) > abs(t_thresh))
-
     
 def freedman_lane_permutations(edges, phenotype, covariates, n_perms, perm_order):
     """
@@ -178,11 +185,12 @@ def freedman_lane_permutations(edges, phenotype, covariates, n_perms, perm_order
 
     # precompute the pseudo-inv and estimator variance for permutation models
     X = np.hstack((phenotype,                         # phenotype
-                   np.ones((phenotype.shape[0], 1))   # intercept term 
+                   np.ones((phenotype.shape[0], 1)),  # intercept term 
                    covariates))                       # covariate block
     pinv = scipy.linalg.pinv2(X)
     inv_vcv = scipy.linalg.inv(np.dot(X.T, X))
     inv_vcv = np.sqrt(np.diag(inv_vcv))
+    n_subjects, n_predictors = X.shape
     
     # generate permutation distribution
     perm_tvalues = np.zeros((n_perms, edges.shape[1]))
@@ -192,19 +200,20 @@ def freedman_lane_permutations(edges, phenotype, covariates, n_perms, perm_order
         edges_tilde = Rs_tilde + edges_hat
         # compute betas and tvalues for edge-tilde ~ phenotype + covariates, for each edge
         betas = np.dot(pinv, edges_tilde)    
-        fit = np.dot(X, b)
-        residuals = edges_new - fit
-        eps_std = np.std(residuals, axis=0, ddof=nparams)
+        fit = np.dot(X, betas)
+        residuals = edges_tilde - fit
+        eps_std = np.std(residuals, axis=0, ddof=n_predictors)
         beta_std = inv_vcv[0] * eps_std
-        perm_tvalues[perm_idx, :] = b[0, :]/beta_std
-        perm_betas[perm_idx, :] = b[0, :]
+        perm_tvalues[perm_idx, :] = betas[0, :]/beta_std
+        perm_betas[perm_idx, :] = betas[0, :]
         
-        if perm_idx % (n_perms // 10) == 0:
-            print(f'freedman-lane perms {int(n_perms / perm_idx)}% complete...')
+        if (perm_idx+1) % (n_perms // 10) == 0:
+            print(f'     freedman-lane perms {int(100*((perm_idx+1) / n_perms))}% complete...')
             
     return perm_tvalues, perm_betas
 	
 	
+
 def generate_cell_edges_dict(net_order_file):
     """ 
     Generates dictionary that maps cell_id -> (indices of edges) for cell
@@ -244,5 +253,3 @@ def generate_cell_edges_dict(net_order_file):
             cell_edges_dict[tuple(sorted((net_i, net_j)))] = np.argwhere(netmask[utri_idxs] == 1).flatten()
     
     return cell_edges_dict
-	
-

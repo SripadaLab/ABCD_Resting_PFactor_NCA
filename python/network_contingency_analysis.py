@@ -4,7 +4,6 @@ import itertools
 import statsmodels
 
 
-
 def suprathreshold_count_cell_summary_fn(t_vals_per_edge, t_threshold):
     """ Returns the number of suprathreshold edges in t_vals_per_edge. This is the cell summary statistic used in Sripada (2021).
     """

@@ -119,9 +119,9 @@ def network_contingency_analysis(edges, phenotype, covariates, n_perms, t_thresh
     print('running steps 3/4- summary statistic and pvalues are computed for each cell, for both observed and permuted tvalues...')
     cell_edges_dict = generate_cell_edges_dict(net_order_file)
     
-    observed_cell_summaries = np.zeroes(len(cell_edges_dict))
+    observed_cell_summaries = np.zeros(len(cell_edges_dict))
     perm_cell_summaries = np.zeros((len(cell_edges_dict), n_perms))
-    cell_raw_pvals = np.zeroes(len(cell_edges_dict))
+    cell_raw_pvals = np.zeros(len(cell_edges_dict))
     for cell_i, cell in enumerate(cell_edges_dict):
         cell_edges_idxs = cell_edges_dict[cell]
         observed_cell_summary = cell_summary_fn(observed_tvalues[cell_edges_idxs], t_threshold)

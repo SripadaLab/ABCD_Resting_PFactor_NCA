@@ -7,7 +7,7 @@ import statsmodels
 def suprathreshold_count_cell_summary_fn(t_vals_per_edge, t_threshold):
     """ Returns the number of suprathreshold edges in t_vals_per_edge. This is the cell summary statistic used in Sripada (2021).
     """
-    return np.sum(np.abs(t_vals_per_edge) > abs(t_thresh))
+    return np.sum(np.abs(t_vals_per_edge) > abs(t_threshold))
 
 
 def network_contingency_analysis(edges, phenotype, covariates, n_perms, t_threshold, net_order_file, 

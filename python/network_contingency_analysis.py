@@ -117,7 +117,7 @@ def network_contingency_analysis(edges, phenotype, covariates, n_perms, t_thresh
     
     # third step of schematic above:
     #     summary statistics and pvalues computed for each cell, for both observed and permuted tvalues
-    print('running steps 3/4- summary statistic and pvalues are computed for each cell, for both observed and permuted tvalues...')
+    print('running steps 3/4 - summary statistic and pvalues are computed for each cell, for both observed and permuted tvalues...')
     cell_edges_dict = generate_cell_edges_dict(net_order_file)
     
     observed_cell_summaries = np.zeros(len(cell_edges_dict))

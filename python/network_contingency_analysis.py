@@ -89,6 +89,7 @@ def network_contingency_analysis(edges, phenotype, covariates, n_perms, t_thresh
         perm_order = np.zeros((n_subjects, n_perms))
         for i in range(n_perms):
             perm_order[:, i] = np.random.choice(np.arange(n_subjects), replace=False, size=n_subjects)
+	perm_order = perm_order.astype(np.int32)  # needs to be int array to be used for row-indexing later
     
     
     # first step of schematic above: 

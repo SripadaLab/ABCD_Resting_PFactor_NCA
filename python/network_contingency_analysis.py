@@ -123,6 +123,7 @@ def network_contingency_analysis(edges, phenotype, covariates, n_perms, t_thresh
     observed_cell_summaries = np.zeros(len(cell_edges_dict))
     perm_cell_summaries = np.zeros((len(cell_edges_dict), n_perms))
     cell_raw_pvals = np.zeros(len(cell_edges_dict))
+    cell_order = []
     for cell_i, cell in enumerate(cell_edges_dict):
         cell_edges_idxs = cell_edges_dict[cell]
         observed_cell_summary = cell_summary_fn(observed_tvalues[cell_edges_idxs], t_threshold)
@@ -133,9 +134,10 @@ def network_contingency_analysis(edges, phenotype, covariates, n_perms, t_thresh
         perm_cell_summaries[cell_i, :] = perms_cell_summary
         cell_p_val = np.sum(perms_cell_summary >= observed_cell_summary) / n_perms  # one-sided hypothesis test
         cell_raw_pvals[cell_i] = cell_p_val
+	cell_order.append(cell)
     _, fdr_corrected_cell_pvals = statsmodels.stats.multitest.fdrcorrection(cell_raw_pvals, alpha=0.05)
     
-    return observed_tvalues, perm_tvalues, observed_cell_summaries, perm_cell_summaries, cell_raw_pvals, fdr_corrected_cell_pvals
+    return observed_tvalues, perm_tvalues, observed_cell_summaries, perm_cell_summaries, cell_raw_pvals, fdr_corrected_cell_pvals, cell_order
    
     
 def freedman_lane_permutations(edges, phenotype, covariates, n_perms, perm_order):

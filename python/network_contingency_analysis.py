@@ -177,7 +177,7 @@ def freedman_lane_permutations(edges, phenotype, covariates, n_perms, perm_order
     """
     # steps 1, 2 in function header
     X = np.hstack((np.ones((edges.shape[0], 1)).astype(np.float),
-                   covars))
+                   covariates))
     pinv_X = scipy.linalg.pinv2(X)
     betas = np.dot(pinv_X, edges)
     edges_hat = np.dot(X, betas)
